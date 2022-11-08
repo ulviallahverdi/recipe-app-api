@@ -11,7 +11,7 @@ from django.test import SimpleTestCase
 class CommandTests(SimpleTestCase):
     """ Test Commands . """
     def test_wait_for_db_ready(self, patched_check):
-        """Test wait for db"""
+        """Test wait for db (making global erros: OperationalError and Psycopg2 are the same expceptions ...)"""
         patched_check.return_value = True
         call_command('wait_for_db')
         patched_check.assert_called_one_with(database=['default'])

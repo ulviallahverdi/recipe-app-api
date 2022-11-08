@@ -1,17 +1,23 @@
 from unittest.mock import patch
 
-from psycopg2 import OperationalError as Psycopg2Error
-
-
 from django.core.management import call_command
 from django.db.utils import OperationalError
-from django.test import SimpleTestCase
+from django.test import TestCase
 
-@patch('core.management.commands.wait_for_db.Command.check')
-class CommandTests(SimpleTestCase):
-    """ Test Commands . """
-    def test_wait_for_db_ready(self, patched_check):
-        """Test wait for db (making global erros: OperationalError and Psycopg2 are the same expceptions ...)"""
-        patched_check.return_value = True
-        call_command('wait_for_db')
-        patched_check.assert_called_one_with(database=['default'])
+
+class CommandTests(TestCase):
+
+    def test_wait_for_db_ready(self):
+        """Test waiting for db when db is available"""
+        with patch('django.db.utils.ConnectionHandler.__getitem__') as gi:
+            gi.return_value = True
+            call_command('wait_for_db')
+            self.assertEqual(gi.call_count, 1)
+
+    @patch('time.sleep', return_value=True)
+    def test_wait_for_db(self, ts):
+        """Test waiting for db"""
+        with patch('django.db.utils.ConnectionHandler.__getitem__') as gi:
+            gi.side_effect = [OperationalError] * 5 + [True]
+            call_command('wait_for_db')
+            self.assertEqual(gi.call_count, 6)
